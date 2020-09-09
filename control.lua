@@ -43,7 +43,7 @@ local function set_combinator_text(player_index)
     local text = global.dialog[player_index].textfield.text
     if combinator.valid then
         local control = combinator.get_control_behavior()
-        for i = 1, math.max(#text, control.signals_count)  do
+        for i = 1, math.min(#text, control.signals_count)  do
             local c = text:sub(i,i):upper()
             if (c >= "A" and c <= "Z") or (c >= "0" and c <= "9") then
                 local signal = "signal-" .. c
