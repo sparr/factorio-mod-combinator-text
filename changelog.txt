@@ -1,0 +1,8 @@
+---------------------------------------------------------------------------------------------------
+Version: 1.0.1
+Date: 2020-09-09
+  Features:
+    - GUI dialog for entering constant combinator signals as text
+  Other:
+    - First version!
+
