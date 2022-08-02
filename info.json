@@ -1,11 +1,11 @@
 {
     "name": "combinator-text",
-    "version": "1.0.2",
+    "version": "1.1.0",
     "title": "Combinator Text",
     "author": "Sparr",
     "contact": "sparr0@gmail.com",
     "homepage": "https://github.com/sparr/factorio-mod-combinator-text",
-    "factorio_version": "1.0",
-    "dependencies": ["base >= 1.0"],
+    "factorio_version": "1.1",
+    "dependencies": [],
     "description": "Allows typing in text to set constant combinator signals"
 }
