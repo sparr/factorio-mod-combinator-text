@@ -1,101 +1,72 @@
-global.text = global.text or {}
-global.dialog = global.dialog or {}
-global.combinator = global.combinator or {}
-global.reopens = global.reopens or {}
+-- get the text from an existing combinator
+local function get_combinator_text(combinator)
+    local text = ""
+    if combinator and combinator.valid then
+        local control = combinator.get_control_behavior()
+        if control and control.valid then
+            local skip = 0
+            for i = 1, control.signals_count do
+                local signal = control.get_signal(i).signal
+                local c = nil
+                if signal and signal.type == "virtual" and signal.name:len()==8 and signal.name:sub(1,7) == "signal-" then
+                    c = signal.name:sub(8,8)
+                    -- add a space for every signal or slot we skipped due to it being empty or non-text
+                    for e = 1, skip do
+                        text = text .. " "
+                    end
+                    skip = 0
+                    text = text .. c
+                else
+                    skip = skip + 1
+                end
+            end
+        end
+    end
+    return text
+end
 
--- when opening a constant combinator, open the mod gui with any saved text from previous use
+-- when opening a constant combinator, create and populate the mod gui
 local function on_gui_opened(event)
     local entity = event.entity
     if not entity or entity.type ~= "constant-combinator" then return end
-    local player_index = event.player_index
-    global.combinator[player_index] = entity
-    local dialog = game.players[player_index].gui.left.add{type="frame", name="combinator_text", caption="Combinator Text", direction="vertical"}
-    dialog.add{type="textfield", name="textfield", text=global.text[player_index]}
-    dialog.add{type="button", name="button", caption="Apply"}
-    global.dialog[player_index] = dialog
-end
+    local player = game.get_player(event.player_index)
 
--- remember the entered text, close the mod gui, forget the gui and what combinator the player had open
-local function close_gui(player_index)
-    local dialog = global.dialog[player_index]
-    if dialog and dialog.valid then
-        global.text[player_index] = dialog.textfield.text
-        dialog.destroy()
-    end
-    global.dialog[player_index] = nil
-    global.combinator[player_index] = nil
-end
+    -- destroy the frame if it still exists from previously
+    local relative_frame = player.gui.relative["combinator-text"]
+    if relative_frame then relative_frame.destroy() end
 
--- when closing a constant combinator, close the mod gui
-local function on_gui_closed(event)
-    local entity = event.entity
-    if not entity or entity.type ~= "constant-combinator" then return end
-    close_gui(event.player_index)
-end
-
--- when entering or exiting the editor, close the mod gui
-local function on_player_toggled_map_editor(event)
-    close_gui(event.player_index)
-end
-
--- after a combinator has been changed, reopen its gui to see the change
-local function handle_reopens()
-    for index, reopen in pairs(global.reopens) do
-        if reopen.player.valid and reopen.combinator.valid and reopen.tick == game.tick then
-            reopen.player.opened = reopen.combinator
-            global.reopens[index] = nil
-        end
-    end
-    script.on_nth_tick(game.tick, nil)
+    -- anchor the frame below the constant combinator gui
+    local anchor = {gui=defines.relative_gui_type.constant_combinator_gui, position=defines.relative_gui_position.bottom}
+    -- create the frame
+    local frame = player.gui.relative.add{type="frame", anchor=anchor, name="combinator-text", caption="Combinator Text", direction="vertical"}
+    frame.add{type="textfield", name="textfield", text=get_combinator_text(entity)}
+    frame.add{type="button", name="button", caption="Apply"}
 end
 
 -- use the text in a player's mod gui to set the signals in their open combinator
-local function set_combinator_text(player_index)
-    local player = game.players[player_index]
-    local combinator = global.combinator[player_index]
-    local text = global.dialog[player_index].textfield.text
-    if combinator.valid then
-        local control = combinator.get_control_behavior()
-        for i = 1, math.min(#text, control.signals_count)  do
-            local c = text:sub(i,i):upper()
-            -- non-alphanumeric characters get skipped and don't change the combinator signals in those positions
-            if (c >= "A" and c <= "Z") or (c >= "0" and c <= "9") then
-                local signal = "signal-" .. c
-                control.set_signal(i, {signal={type="virtual",name=signal}, count=0})
+local function on_gui_apply(event)
+    local element = event.element
+    if
+        element.parent.name == "combinator-text" and
+        (
+            (event.name == defines.events.on_gui_click and element.type == "button") or
+            (event.name == defines.events.on_gui_confirmed and element.type == "textfield")
+        )
+    then
+        local combinator = game.get_player(event.player_index).opened
+        local text = element.parent["textfield"].text
+        if combinator.valid then
+            local control = combinator.get_control_behavior()
+            for i = 1, math.min(#text, control.signals_count)  do
+                local signal = "signal-" .. text:sub(i,i):upper()
+                if game.virtual_signal_prototypes[signal] then
+                    control.set_signal(i, {signal={type="virtual",name=signal}, count=0})
+                end
             end
         end
-        player.opened = nil
-        -- schedule re-opening this combinator gui on the next tick
-        global.reopens[#global.reopens + 1] = {player=player, combinator=combinator, tick=game.tick+1}
-        script.on_nth_tick(game.tick+1, handle_reopens)
-    else
-        close_gui(player_index)
     end
 end
 
--- there are probably best practices worth implementing here
-local function on_gui_click(event)
-    local element = event.element
-    local player_index = event.player_index
-    local dialog = global.dialog[player_index]
-    if element.parent == dialog and element.type == "button" then
-        set_combinator_text(player_index)
-    end
-end
-
--- set the combinator text when the player applies their input
-local function on_gui_confirmed(event)
-    local element = event.element
-    local player_index = event.player_index
-    local dialog = global.dialog[player_index]
-    if element.parent == dialog and element.type == "textfield" then
-        set_combinator_text(player_index)
-    end
-end
-
-script.on_load(function() if next(global.reopens) then script.on_nth_tick(game.tick+1, handle_reopens) end end)
 script.on_event(defines.events.on_gui_opened, on_gui_opened)
-script.on_event(defines.events.on_gui_closed, on_gui_closed)
-script.on_event(defines.events.on_gui_click, on_gui_click)
-script.on_event(defines.events.on_gui_confirmed, on_gui_confirmed)
-script.on_event(defines.events.on_player_toggled_map_editor, on_player_toggled_map_editor)
+script.on_event(defines.events.on_gui_click, on_gui_apply)
+script.on_event(defines.events.on_gui_confirmed, on_gui_apply)

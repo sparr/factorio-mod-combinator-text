@@ -1,4 +1,13 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.1.1
+Date: 2022-08-04
+  Features:
+    - Text now populated from existing combinator signals
+    - Attached mod GUI to combinator GUI
+    - Support for arbitrary single character virtual signals if they exist, not just 0-9 and A-Z
+  Changes:
+    - Removed unnecessary GUI reopen logic
+---------------------------------------------------------------------------------------------------
 Version: 1.1.0
 Date: 2022-08-02
   Bugfixes:
