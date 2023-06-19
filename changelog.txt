@@ -1,6 +1,11 @@
 ---------------------------------------------------------------------------------------------------
 Version: 1.1.2
-Date: ????
+Date: 2023-06-18
+  Changes:
+    - Spaces erase signals
+    - Unknown signals are represented as underscores
+    - Underscores leave existing signals
+    - Signals after the length of the text are erased
   Other:
     - Add doc comments to source
 ---------------------------------------------------------------------------------------------------
