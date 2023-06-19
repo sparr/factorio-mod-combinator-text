@@ -6,21 +6,22 @@ local function get_combinator_text(combinator)
     if combinator and combinator.valid then
         local control = combinator.get_control_behavior() --[[@as LuaConstantCombinatorControlBehavior]]
         if control and control.valid then
-            local skip = 0
+            local blank = 0
             ---@type uint
             for i = 1, control.signals_count do
                 local signal = control.get_signal(i).signal
-                local c = nil
-                if signal and signal.type == "virtual" and signal.name:len()==8 and signal.name:sub(1,7) == "signal-" then
-                    c = signal.name:sub(8,8)
-                    -- add a space for every signal or slot we skipped due to it being empty or non-text
-                    for e = 1, skip do
-                        text = text .. "_"
-                    end
-                    skip = 0
-                    text = text .. c
+                if not signal then
+                    blank = blank + 1
                 else
-                    skip = skip + 1
+                    for _ = 1, blank do
+                        text = text .. " "
+                    end
+                    blank = 0
+                    if signal.type ~= "virtual" or signal.name:len()~=8 or signal.name:sub(1,7) ~= "signal-" then
+                        text = text .. "_"
+                    else
+                        text = text .. signal.name:sub(8,8)
+                    end
                 end
             end
         end
