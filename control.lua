@@ -15,7 +15,7 @@ local function get_combinator_text(combinator)
                     c = signal.name:sub(8,8)
                     -- add a space for every signal or slot we skipped due to it being empty or non-text
                     for e = 1, skip do
-                        text = text .. " "
+                        text = text .. "_"
                     end
                     skip = 0
                     text = text .. c
@@ -66,11 +66,20 @@ local function on_gui_apply(event)
         if combinator and combinator.valid then
             local control = combinator.get_control_behavior() --[[@as LuaConstantCombinatorControlBehavior]]
             ---@type uint
-            for i = 1, math.min(#text, control.signals_count)  do
-                local signal = "signal-" .. text:sub(i,i):upper()
-                if game.virtual_signal_prototypes[signal] then
-                    control.set_signal(i, {signal={type="virtual",name=signal}, count=0})
+            for i = 1, math.min(#text, control.signals_count) do
+                local char = text:sub(i,i):upper()
+                if char == " " then
+                    control.set_signal(i, nil)
+                else
+                    local signal = "signal-" .. char
+                    if game.virtual_signal_prototypes[signal] then
+                        control.set_signal(i, {signal={type="virtual",name=signal}, count=0})
+                    end
                 end
+            end
+            ---@type uint
+            for i = math.min(#text, control.signals_count) + 1, math.max(#text, control.signals_count) do
+                control.set_signal(i, nil)
             end
         end
     end
