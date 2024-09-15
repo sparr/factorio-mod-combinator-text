@@ -1,4 +1,11 @@
 ---------------------------------------------------------------------------------------------------
+Version: 1.2.0
+Date: 2024-09-14
+  Changes:
+    - Limit text field length to combinator signal count
+  Bugfixes:
+    - Avoid crash when entering too much text
+---------------------------------------------------------------------------------------------------
 Version: 1.1.3
 Date: 2023-06-18
   Changes:

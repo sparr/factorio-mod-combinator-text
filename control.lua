@@ -33,7 +33,7 @@ end
 ---@param event EventData.on_gui_opened
 local function on_gui_opened(event)
     local entity = event.entity
-    if not entity or entity.type ~= "constant-combinator" then return end
+    if not entity or not entity.valid or entity.type ~= "constant-combinator" then return end
     local player = game.get_player(event.player_index)
     if not player then return end
 
@@ -44,9 +44,7 @@ local function on_gui_opened(event)
     -- anchor the frame below the constant combinator gui
     ---@type GuiAnchor
     local anchor = {gui=defines.relative_gui_type.constant_combinator_gui, position=defines.relative_gui_position.bottom}
-    -- create the frame
-    ---@type LuaGuiElement
-    local frame = player.gui.relative.add{type="frame", anchor=anchor, name="combinator-text", caption="Combinator Text", direction="vertical"}
+    local frame = (player.gui.relative.add{type="frame", anchor=anchor, name="combinator-text", caption="Combinator Text", direction="vertical"})--[[@as LuaGuiElement.frame]]
     frame.add{type="textfield", name="textfield", text=get_combinator_text(entity)}
     frame.add{type="button", name="button", caption="Apply"}
 end
@@ -63,10 +61,9 @@ local function on_gui_apply(event)
         )
     then
         local combinator = game.get_player(event.player_index).opened
-        local text = element.parent["textfield"].text
         if combinator and combinator.valid then
-            local control = combinator.get_control_behavior() --[[@as LuaConstantCombinatorControlBehavior]]
-            ---@type uint
+            local text = element.parent["textfield"]--[[@as LuaGuiElement.textfield]].text
+            local control = combinator.get_control_behavior()--[[@as LuaConstantCombinatorControlBehavior]]
             for i = 1, math.min(#text, control.signals_count) do
                 local char = text:sub(i,i):upper()
                 if char == " " then
@@ -79,9 +76,24 @@ local function on_gui_apply(event)
                 end
             end
             ---@type uint
-            for i = math.min(#text, control.signals_count) + 1, math.max(#text, control.signals_count) do
+            for i = math.min(#text, control.signals_count) + 1, control.signals_count do
                 control.set_signal(i, nil)
             end
+        end
+    end
+end
+
+---Limit text length to signal count of the combinator
+---@param event EventData.on_gui_elem_changed
+local function on_gui_text_changed(event)
+    local element = event.element
+    if
+        element.valid and element.parent and element.parent.name == "combinator-text" and element.type == "textfield"
+    then
+        local combinator = game.get_player(event.player_index).opened
+        if combinator and combinator.valid then
+            local control = combinator.get_control_behavior()--[[@as LuaConstantCombinatorControlBehavior]]
+            element.parent["textfield"].text = string.sub(element.parent["textfield"]--[[@as LuaGuiElement.textfield]].text, 1, control.signals_count)
         end
     end
 end
@@ -89,3 +101,4 @@ end
 script.on_event(defines.events.on_gui_opened, on_gui_opened)
 script.on_event(defines.events.on_gui_click, on_gui_apply)
 script.on_event(defines.events.on_gui_confirmed, on_gui_apply)
+script.on_event(defines.events.on_gui_text_changed, on_gui_text_changed)
